@@ -1,3 +1,7 @@
+# HTML files used for testing
+*.htm
+*.html
+
 # Compiled Lua sources
 luac.out
 
