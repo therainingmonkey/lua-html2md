@@ -14,7 +14,7 @@
  html2md takes an optional second argument to hide urls. If this argument
  is `true`, the markdown does not contain urls, only link text.
  
- You can also call `html2md.parsefile()` which takes a filename in the same
+ You can also call `html2md:parsefile()` which takes a filename in the same
  format as `io.open()`. This also takes the optional argument to hide urls.
  
  
