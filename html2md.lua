@@ -100,7 +100,7 @@ function html2md.replaceImages(html, hide_urls)
 
 	html = html:gsub("<img (.-src=([\"\'])(.-)%2.-)>", function(attributes, quote, src)
 			local _, altText = attributes:match("alt=([\"\'])(.-)%1")
-			local imagestring = ""
+			local imageString
 			if not hide_urls then
 				if altText then imageString = "!["..altText.."]("..src..")"
 				else imageString = "!["..src:match("(%w-).%w-$").."]("..src..")" -- Filename (without extension)
@@ -161,16 +161,16 @@ function html2md.findNextListClose(html, cursor)
 end
 
 function html2md.replaceListBlock(block, depth, listType)
-	local depth = depth or 0
+	depth = depth or 0
 	-- Add an indent before the line if we're in a nested list
 	local depthIndent = ""
 	for i=1, depth do depthIndent = "  " .. depthIndent end -- Adds 2 spaces for every level of nesting
 
 	-- If block is an ordered list, replace <'li'> with 1, 2, 3
 	if listType == "ol" then
-		olMarker =  1
+		local olMarker =  1
 		while true do
-			liStart, liEnd = block:find("<li .->")
+			local liStart, liEnd = block:find("<li .->")
 			if liStart == nil or liEnd > #block then break end
 			block = block:sub(1, liStart-1).."\n"..depthIndent..tostring(olMarker)..". "..block:sub(liEnd+1, -1)
 			olMarker = olMarker + 1
@@ -184,8 +184,7 @@ function html2md.replaceListBlock(block, depth, listType)
 		-- Else block is either an unordered list or something has gone wrong,
 				-- either way we replace <'li'> with *
 				else
-			liMarker = "\n" .. depthIndent .. "* "
-			block = block:gsub("<li .->", liMarker)
+			block = block:gsub("<li .->", "\n" .. depthIndent .. "* ")
 		end
 
 	-- Remove all the leftover closing tags
