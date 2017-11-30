@@ -11,7 +11,8 @@ function html2md.loadFile(filename)
 end
 
 function html2md.findLinkRoot(html)
-	_, linkRoot = html:match("<base .- href%=([\"\'])(%w)%1") -- We capture the opening quote 'or " to make sure we close with the same type
+	 -- We capture the opening quote 'or " to make sure we close with the same type
+	local _, linkRoot = html:match("<base .- href%=([\"\'])(%w)%1")
 	return linkRoot or ""
 end
 
@@ -82,9 +83,10 @@ function html2md.replaceTags(html)
 end
 
 -- TODO: Find a string (alt-text etc.) for links with no text
-function html2md.replaceLinks(html, hide_urls)
+function html2md.replaceLinks(html, hide_urls, linkRoot)
 	if not hide_urls then
-		html = html:gsub("<a .-href=([\"\'])(.-)%1.- >(.-)</a >", function(quote, url, text) -- Quote is not used, it's just to pair quotemarks in the capture
+		 -- Quote is not used, it's just to pair quotemarks in the capture
+		html = html:gsub("<a .-href=([\"\'])(.-)%1.- >(.-)</a >", function(quote, url, text)
 			if url:sub(1,1) == "/" or url:sub(1,1) == "." then url = linkRoot..url end
 			return "["..text.."]".."("..url..")"
 		end)
@@ -95,7 +97,8 @@ function html2md.replaceLinks(html, hide_urls)
 end
 
 function html2md.replaceImages(html, hide_urls)
-	html = html:gsub("<img (.-src=([\"\'])(.-)%2.-)>", function(attributes, quote, src) -- Quote is not used, it's just to pair quotemarks in the capture
+
+	html = html:gsub("<img (.-src=([\"\'])(.-)%2.-)>", function(attributes, quote, src)
 			local _, altText = attributes:match("alt=([\"\'])(.-)%1")
 			local imagestring = ""
 			if not hide_urls then
@@ -124,7 +127,7 @@ function html2md.replaceTables(html)
 	while true do
 		i, j, tableString = html:find("<table .->(.-)</table .->", i)
 		if i == nil then break end
-		tableString, headerCells = tableString:gsub("<th .->", "|")
+		local tableString, headerCells = tableString:gsub("<th .->", "|")
 		if headerCells == nil then
 			local topRow = tableString:match("<tr .->.-</tr .->")
 			for _ in topRow:gmatch("<td .->") do
@@ -162,7 +165,7 @@ function html2md.replaceListBlock(block, depth, listType)
 	-- Add an indent before the line if we're in a nested list
 	local depthIndent = ""
 	for i=1, depth do depthIndent = "  " .. depthIndent end -- Adds 2 spaces for every level of nesting
-	
+
 	-- If block is an ordered list, replace <'li'> with 1, 2, 3
 	if listType == "ol" then
 		olMarker =  1
@@ -184,7 +187,7 @@ function html2md.replaceListBlock(block, depth, listType)
 			liMarker = "\n" .. depthIndent .. "* "
 			block = block:gsub("<li .->", liMarker)
 		end
-	
+
 	-- Remove all the leftover closing tags
 	block = block:gsub("</li .->", "")
 	block = block:gsub("</dt .->", "")
@@ -197,33 +200,33 @@ function html2md.replaceListBlock(block, depth, listType)
 	return block
 end
 
-function html2md:replaceLists(html)
+function html2md.replaceLists(html)
 	local cursor, depth, listStack = 1, 0, {}
 	while true do
 		if cursor == nil or cursor >= #html then break end
-		
+
 		-- The current block stretches from the cursor to the nearest list tag
-		local nextListOpen = self.findNextListOpening(html, cursor + 1)
-		local nextListClose = self.findNextListClose(html, cursor + 1)
+		local nextListOpen = html2md.findNextListOpening(html, cursor + 1)
+		local nextListClose = html2md.findNextListClose(html, cursor + 1)
 		local blockEnd = math.min(nextListOpen, nextListClose)
-		
+
 		-- Substitute <'li'>s in the block for the right type of md list prefix
 		-- The type of list is stored on the listStack
 		local block = html:sub(cursor, blockEnd-1)
 		if depth > 0 then -- depth < 1 suggests we are not in a list block
-			html = html:sub(1, cursor-1) .. self.replaceListBlock(block, depth, listStack[#listStack]) .. html:sub(blockEnd, -1)
+			html = html:sub(1, cursor-1) .. html2md.replaceListBlock(block, depth, listStack[#listStack]) .. html:sub(blockEnd, -1)
 		end
-	
+
 		-- Move the cursor to the end of this block
 		if nextListOpen < nextListClose then
 			-- Next block starts with a deeper nested list
-			cursor = self.findNextListOpening(html, cursor + 1)
+			cursor = html2md.findNextListOpening(html, cursor + 1)
 			depth = depth + 1
 			-- Add the list type to the stack("ul" "ol" or "dl")
 			table.insert(listStack, html:sub(cursor + 1, cursor + 2))
 		else
 			-- This list block ends and we go shallower or not a list
-			cursor = self.findNextListClose(html, cursor + 1)
+			cursor = html2md.findNextListClose(html, cursor + 1)
 			depth = math.max(depth-1, 0)
 			-- Remove the list type from the stack
 			table.remove(listStack, #listStack)
@@ -237,25 +240,25 @@ function html2md.stripTags(html)
 	return html
 end
 
-function html2md:parse(html, hide_urls)
-	linkRoot = self.findLinkRoot(html)
-	html = self.escapeHTML(html)
-	html = self.fixTagWhitespace(html)
-	html = self.tagsToLowercase(html)
-	html = self.removeNewlines(html)
-	html = self.replaceTags(html)
-	html = self.replaceLinks(html, hide_urls)
-	html = self.replaceImages(html, hide_urls)
-	html = self.replaceBlockQuote(html)
-	html = self.replaceTables(html)
-	html = self:replaceLists(html)
-	html = self.stripTags(html)
+function html2md.parse(html, hide_urls)
+	local linkRoot = html2md.findLinkRoot(html)
+	html = html2md.escapeHTML(html)
+	html = html2md.fixTagWhitespace(html)
+	html = html2md.tagsToLowercase(html)
+	html = html2md.removeNewlines(html)
+	html = html2md.replaceTags(html)
+	html = html2md.replaceLinks(html, hide_urls, linkRoot)
+	html = html2md.replaceImages(html, hide_urls)
+	html = html2md.replaceBlockQuote(html)
+	html = html2md.replaceTables(html)
+	html = html2md.replaceLists(html)
+	html = html2md.stripTags(html)
 	return html
 end
 
-function html2md:parsefile(filename, hide_urls)
-	html = tostring(self.loadFile(filename))
-	md = self:parse(html, hide_urls)
+function html2md.parsefile(filename, hide_urls)
+	local html = tostring(html2md.loadFile(filename))
+	local md = html2md.parse(html, hide_urls)
 	return md
 end
 
