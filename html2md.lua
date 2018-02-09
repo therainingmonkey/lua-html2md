@@ -61,7 +61,7 @@ function html2md.replaceTags(html)
 	html = html:gsub("<br /?>", "\n")		-- Linebreak
 	-- This will add 2 newlines for each p tag *and* each closing p tag.
 	html = html:gsub("</?p .->", "\n\n")	-- Paragraph
-	html = html:gsub("</?section .->", "\n") -- Section
+	html = html:gsub("</?section .->", "\n")	-- Section
 	html = html:gsub("</?article .->", "\n\n")	-- Article
 	html = html:gsub("</?main .->", "********")	-- Main body
 	html = html:gsub("</?em .->", "*")		-- Emphasis -- TODO: May not work when spanning linebreaks
@@ -69,26 +69,27 @@ function html2md.replaceTags(html)
 	html = html:gsub("</?b .->", "**")		-- Bold
 	html = html:gsub("</?u .->", "__")		-- Underline
 	html = html:gsub("</?cite .->", "_")	-- Citation (italicise)
-	html = html:gsub("</?dfn .->", "_")	-- Definition (italicise)
+	html = html:gsub("</?dfn .->", "_")		-- Definition (italicise)
 	html = html:gsub("</?del .->", "~~")	-- Strikethrough (deleted)
 	html = html:gsub("</?s .->", "~~")		-- Strikethrough (changed)
-	html = html:gsub("</?strike .->", "~~")-- Strikethrough (again!)
+	html = html:gsub("</?strike .->", "~~")	-- Strikethrough (again!)
 	html = html:gsub("</?mark .->", "__")	-- Marked text
 	html = html:gsub("</?code .->", "`")	-- Inline code
 	html = html:gsub("</?samp .->", "`")	-- Inline code sample
 	html = html:gsub("</?tt .->", "'")		-- Teletype text (inline code)
 	html = html:gsub("</?pre .->", "\n```\n")	-- Pre-formatted text block (code) -- TODO: Preserve whitespace in pre blocks
-	html = html:gsub("</?kbd .->", "`")	-- Keyboard input
+	html = html:gsub("</?kbd .->", "`")		-- Keyboard input
 	html = html:gsub("<hr /?.->", "\n--------\n")	-- Horizontal rule
 	html = html:gsub("</?q .->", "\"")		-- Inline quote
 	html = html:gsub("<aside .->", "\n\t(")	-- Aside (block)
 	html = html:gsub("</aside.- >", ")\n")	-- Aside close
-	html = html:gsub("<script .-</script .->", "") -- Remove scripts
+	html = html:gsub("<script .-</script .->", "")	-- Remove scripts
 	html = html:gsub("<svg .-</svg .->", "")	-- Remove SVG elements
 	html = html:gsub("<!%-%-.-%-%- >", "")	-- Remove comments
 	html = html:gsub("<style .-</style .->", "")	-- Remove style blocks
-	html = html:gsub("  +", " ")		-- Remove excess whitespace
+	html = html:gsub("  +", " ")			-- Remove excess whitespace
 	html = html:gsub("\t", "")
+    html = html:gsub("&nbsp;", " ")			-- Swap nbsp for space
 	return html
 end
 
