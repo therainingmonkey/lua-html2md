@@ -77,8 +77,8 @@ function html2md.replaceTags(html)
 	html = html:gsub("</?code .->", "`")	-- Inline code
 	html = html:gsub("</?samp .->", "`")	-- Inline code sample
 	html = html:gsub("</?tt .->", "'")		-- Teletype text (inline code)
-	html = html:gsub("</?pre .->", "\n```\n")	-- Pre-formatted text block (code) -- TODO: Preserve whitespace in pre blocks
-	html = html:gsub("</?kbd .->", "`")		-- Keyboard input
+	html = html:gsub("</?pre .->", "\n```\n")	-- Pre-formatted text block (code)
+	html = html:gsub("</?kbd .->", "`")	-- Keyboard input
 	html = html:gsub("<hr /?.->", "\n--------\n")	-- Horizontal rule
 	html = html:gsub("</?q .->", "\"")		-- Inline quote
 	html = html:gsub("<aside .->", "\n\t(")	-- Aside (block)
