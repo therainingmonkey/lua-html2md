@@ -25,7 +25,17 @@ function html2md.escapeHTML(html)
 	return html
 end
 
-function html2md.removeNewlines(html) --TODO: not in ``` blocks
+function html2md.escapePreWhitespace(html)
+	local start, finish = html:find("<pre.->.-</pre.->")
+	if not start then return html end -- No <pre> found
+	local section = html:sub(start, finish)
+	section = section:gsub(" ", "%%20")
+	section = section:gsub("\n", "%%0A")
+	html = html:sub(1,start-1)..section..html:sub(finish+1, -1)
+	return html
+end
+
+function html2md.removeNewlines(html)
 	html = html:gsub('(%a)\r?\n', '%1 ') -- Space is there to prevent words running together which were split by \n
 	html = html:gsub("\r?\n", "")
 	return html
@@ -45,7 +55,7 @@ end
 
 -- Longer matches first!
 function html2md.replaceTags(html)
-	html = html:gsub("<h%d .->", "\n\n#")	-- Header -- TODO: Differentiate between h1, h2 etc.
+	html = html:gsub("<h%d .->", "\n\n#")	-- Header
 	html = html:gsub("</h%d >", "\n========\n")	-- Header close
 	html = html:gsub("<big .->", "\n###")	-- Big text
 	html = html:gsub("<br /?>", "\n")		-- Linebreak
@@ -117,7 +127,7 @@ end
 
 function html2md.replaceBlockQuote(html)
 	html = html:gsub("<blockquote .->.-\n.-</blockquote .->",
-		function(q) return q:gsub("\n","\n> ")end ) -- Quotes _inide_ blockquote tags
+		function(q) return q:gsub("\n","\n> ")end ) -- First, all newlines within a blockquote section
 	html = html:gsub("<blockquote .->", "\n> ") -- Replace first tag, closing tag will be removed later.
 	return html
 end
@@ -239,11 +249,18 @@ function html2md.stripTags(html)
 	return html
 end
 
+function html2md.replaceSubbedWhitespace(html)
+	html = html:gsub("%%20", " ")
+	html = html:gsub("%%0A", "\n")
+	return html
+end
+
 function html2md.parse(html, hide_urls)
 	local linkRoot = html2md.findLinkRoot(html)
-	html = html2md.escapeHTML(html)
 	html = html2md.fixTagWhitespace(html)
 	html = html2md.tagsToLowercase(html)
+	html = html2md.escapePreWhitespace(html)
+	html = html2md.escapeHTML(html)
 	html = html2md.removeNewlines(html)
 	html = html2md.replaceTags(html)
 	html = html2md.replaceLinks(html, hide_urls, linkRoot)
@@ -252,10 +269,11 @@ function html2md.parse(html, hide_urls)
 	html = html2md.replaceTables(html)
 	html = html2md.replaceLists(html)
 	html = html2md.stripTags(html)
+	html = html2md.replaceSubbedWhitespace(html)
 	return html
 end
 
-function html2md.parsefile(filename, hide_urls)
+function html2md.parseFile(filename, hide_urls)
 	local html = tostring(html2md.loadFile(filename))
 	local md = html2md.parse(html, hide_urls)
 	return md

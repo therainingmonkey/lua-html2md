@@ -19,7 +19,6 @@
  
  
  ### TODO:
- * preserve whitespace in code blocks
  * continue ordered list numbering after it's interrupted by a nested list (current behaviour is valid md, but less readable)
  * emphasis can be mangled by linebreaks
  * all headers are currently treated as h1
