@@ -2,6 +2,8 @@
 
 local html2md = {}
 
+local footnotes = {} -- Holds any reference-style links until we add them at the bottom
+
 -- Load html from a file
 function html2md.loadFile(filename)
 	local f = assert(io.open(filename, "r"), "No such file: " .. filename) -- Check file exists
@@ -94,31 +96,41 @@ function html2md.replaceTags(html)
 end
 
 -- TODO: Find a string (alt-text etc.) for links with no text
-function html2md.replaceLinks(html, hide_urls, linkRoot)
-	if not hide_urls then
-		 -- Quote is not used, it's just to pair quotemarks in the capture
-		html = html:gsub("<a .-href=([\"\'])(.-)%1.- >(.-)</a >", function(quote, url, text)
+function html2md.replaceLinks(html, url_mode, linkRoot)
+	if url_mode == "hide" then -- No URL, just [link text]
+		html = html:gsub("<a .->(.-)</a >", "[%1]")
+	elseif url_mode == "footnote" then -- reference style link[1]
+		html = html:gsub("<a .-href=([\"\'])(.-)%1.- >(.-)</a >", function(_, url, text)
+			if url:sub(1,1) == "/" or url:sub(1,1) == "." then url = linkRoot..url end
+			local footnote = "["..tostring(#footnotes+1).."]: "..url
+			table.insert(footnotes, footnote)
+			return "["..text.."]["..tostring(#footnotes).."]"
+		end)
+	else -- Inline link [like so](example.com)
+		html = html:gsub("<a .-href=([\"\'])(.-)%1.- >(.-)</a >", function(_, url, text)
 			if url:sub(1,1) == "/" or url:sub(1,1) == "." then url = linkRoot..url end
 			return "["..text.."]".."("..url..")"
 		end)
-	else
-		html = html:gsub("<a .->(.-)</a >", "[%1]")
 	end
 	return html
 end
 
-function html2md.replaceImages(html, hide_urls)
-
-	html = html:gsub("<img (.-src=([\"\'])(.-)%2.-)>", function(attributes, quote, src)
+function html2md.replaceImages(html, url_mode)
+	html = html:gsub("<img (.-src=([\"\'])(.-)%2.-)>", function(attributes, _, src)
 			local _, altText = attributes:match("alt=([\"\'])(.-)%1")
 			local imageString
-			if not hide_urls then
-				if altText then imageString = "!["..altText.."]("..src..")"
-				else imageString = "!["..src:match("(%w-).%w-$").."]("..src..")" -- Filename (without extension)
-				end
-			else
+			if url_mode == "hide" then
 				if altText then imageString = "![ IMAGE: "..altText.."]"
 				else imageString = "![ IMAGE: "..src:match("(%w-).%w-$").."]"
+				end
+			elseif url_mode == "footnote" then
+				local text = altText or src:match("(%w-).%w-$")
+				local footnote = "["..tostring(#footnotes+1).."]: "..src
+				table.insert(footnotes, footnote)
+				imageString = "![ IMAGE: "..text.."]["..tostring(#footnotes).."]"
+			else
+				if altText then imageString = "!["..altText.."]("..src..")"
+				else imageString = "!["..src:match("(%w-).%w-$").."]("..src..")" -- Filename (without extension)
 				end
 			end
 			return imageString
@@ -256,7 +268,18 @@ function html2md.replaceSubbedWhitespace(html)
 	return html
 end
 
-function html2md.parse(html, hide_urls)
+function html2md.addFootnotes(html, url_mode)
+	if url_mode == "footnote" then
+		html = html .. "\n\n\n\n\n"
+		for _, v in ipairs(footnotes) do
+			html = html..v.."\n"
+		end
+	end
+	return html
+end
+
+function html2md.parse(html, url_mode)
+	-- url_mode = url_mode or "show"
 	local linkRoot = html2md.findLinkRoot(html)
 	html = html2md.fixTagWhitespace(html)
 	html = html2md.tagsToLowercase(html)
@@ -264,19 +287,20 @@ function html2md.parse(html, hide_urls)
 	html = html2md.escapeHTML(html)
 	html = html2md.removeNewlines(html)
 	html = html2md.replaceTags(html)
-	html = html2md.replaceLinks(html, hide_urls, linkRoot)
-	html = html2md.replaceImages(html, hide_urls)
+	html = html2md.replaceLinks(html, url_mode, linkRoot)
+	html = html2md.replaceImages(html, url_mode)
 	html = html2md.replaceBlockQuote(html)
 	html = html2md.replaceTables(html)
 	html = html2md.replaceLists(html)
 	html = html2md.stripTags(html)
 	html = html2md.replaceSubbedWhitespace(html)
+	html = html2md.addFootnotes(html, url_mode)
 	return html
 end
 
-function html2md.parseFile(filename, hide_urls)
+function html2md.parseFile(filename, url_mode)
 	local html = tostring(html2md.loadFile(filename))
-	local md = html2md.parse(html, hide_urls)
+	local md = html2md.parse(html, url_mode)
 	return md
 end
 
